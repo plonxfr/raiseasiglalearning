@@ -1,1 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Raise a SiglaLearning</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Game canvas -->
+  <canvas id="gameCanvas"></canvas>
 
+  <!-- UI for coins/upgrades -->
+  <div id="ui" style="position:absolute; top:10px; left:10px; color:white; font-family:sans-serif;">
+    Coins: <span id="coins">0</span>
+    <button id="feedButton">Feed Sigla (+1 coin)</button>
+  </div>
+
+  <script type="module" src="game.js"></script>
+  <script src="save.js"></script>
+</body>
+</html>
