@@ -1,5 +1,3 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js';
-
 // Scene setup
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -23,6 +21,13 @@ const feedButton = document.getElementById('feedButton');
 feedButton.addEventListener('click', () => {
     coins += 1;
     coinsDisplay.textContent = coins;
+});
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Animate Sigla
