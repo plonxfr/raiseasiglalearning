@@ -2,6 +2,7 @@
 // Scene setup
 // ---------------------------
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa0d8f0);
 
 const camera = new THREE.PerspectiveCamera(
     75,
@@ -15,45 +16,76 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-camera.position.z = 5;
+// ---------------------------
+// Lighting (so things aren't black)
+// ---------------------------
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 10, 5);
+scene.add(light);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambient);
 
 // ---------------------------
-// Base Sigla ball (ALWAYS visible)
+// Floor (house base)
 // ---------------------------
-const baseGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const sigla = new THREE.Mesh(baseGeometry, baseMaterial);
+const floorGeometry = new THREE.BoxGeometry(10, 0.1, 10);
+const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.position.y = -0.5;
+scene.add(floor);
+
+// ---------------------------
+// Player (invisible cube)
+// ---------------------------
+const player = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 1, 0.5),
+    new THREE.MeshBasicMaterial({ visible: false })
+);
+player.position.y = 0;
+scene.add(player);
+
+// ---------------------------
+// Sigla ball (pet)
+// ---------------------------
+const sigla = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 32, 32),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+);
+sigla.position.set(0, 0, -2);
 scene.add(sigla);
 
-// ---------------------------
-// Face texture (layered on top)
-// ---------------------------
+// Face layer
 const loader = new THREE.TextureLoader();
+loader.load('asset/image.png', (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
 
-loader.load(
-    'asset/image.png', // your file
+    const faceMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+    });
 
-    function (texture) {
-        console.log("Face loaded!");
+    const faceMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.51, 32, 32),
+        faceMaterial
+    );
 
-        const faceMaterial = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true
-        });
+    sigla.add(faceMesh);
+});
 
-        // Slightly bigger so it sits on top of the ball
-        const faceGeometry = new THREE.SphereGeometry(0.51, 32, 32);
-        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+// ---------------------------
+// Movement controls
+// ---------------------------
+const keys = {};
 
-        sigla.add(faceMesh); // attach to ball
-    },
+document.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+});
 
-    undefined,
-
-    function (err) {
-        console.error("Face failed to load:", err);
-    }
-);
+document.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+});
 
 // ---------------------------
 // Coins system
@@ -61,44 +93,36 @@ loader.load(
 let coins = 0;
 const coinsDisplay = document.getElementById('coins');
 
-document.getElementById('feedButton').addEventListener('click', () => {
-    coins += 1;
+document.getElementById('feedButton').onclick = () => {
+    coins++;
     coinsDisplay.textContent = coins;
-});
+};
 
 // ---------------------------
-// Save / Load system
+// Camera follow
 // ---------------------------
-function exportSave(data) {
-    return btoa(JSON.stringify(data));
+function updateCamera() {
+    camera.position.x = player.position.x;
+    camera.position.z = player.position.z + 5;
+    camera.position.y = player.position.y + 3;
+
+    camera.lookAt(player.position);
 }
-
-function importSave(str) {
-    return JSON.parse(atob(str));
-}
-
-function saveGame() {
-    const saveData = { coins };
-    const exported = exportSave(saveData);
-    alert("Copy this save:\n" + exported);
-}
-
-function loadGame() {
-    const input = prompt("Paste your save:");
-    if (!input) return;
-
-    const data = importSave(input);
-    coins = data.coins || 0;
-    coinsDisplay.textContent = coins;
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('saveBtn').onclick = saveGame;
-    document.getElementById('loadBtn').onclick = loadGame;
-});
 
 // ---------------------------
-// Resize handling
+// Movement logic
+// ---------------------------
+function movePlayer() {
+    const speed = 0.05;
+
+    if (keys['w']) player.position.z -= speed;
+    if (keys['s']) player.position.z += speed;
+    if (keys['a']) player.position.x -= speed;
+    if (keys['d']) player.position.x += speed;
+}
+
+// ---------------------------
+// Resize
 // ---------------------------
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -107,10 +131,13 @@ window.addEventListener('resize', () => {
 });
 
 // ---------------------------
-// Animation
+// Animation loop
 // ---------------------------
 function animate() {
     requestAnimationFrame(animate);
+
+    movePlayer();
+    updateCamera();
 
     sigla.rotation.y += 0.01;
 
