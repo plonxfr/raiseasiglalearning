@@ -36,7 +36,10 @@ loader.load(
     
     function (texture) {
         console.log("Texture loaded successfully!");
-        sigla.material = new THREE.MeshBasicMaterial({ map: texture });
+       sigla.material = new THREE.MeshBasicMaterial({ 
+    map: texture,
+    transparent: true
+});
     },
 
     undefined,
