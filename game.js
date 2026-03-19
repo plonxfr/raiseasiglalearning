@@ -105,7 +105,11 @@ document.addEventListener('mousemove', e => {
   if (document.pointerLockElement === document.body) {
     yaw -= e.movementX * 0.002;
     pitch += e.movementY * 0.002; // inverted Y
-    // no clamp = can look fully up/down
+
+    // clamp pitch so camera can't fly infinitely far
+    const maxPitch = Math.PI/2 - 0.01;
+    const minPitch = -Math.PI/2 + 0.01;
+    pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
   }
 });
 
@@ -194,9 +198,6 @@ function animate() {
   rotatePlayer();
   updateCamera();
 
-  // Sigla rotation
-  sigla.rotation.y += 0.01;
-
   // Sigla wandering
   if (siglaMoving) {
     const speed = 0.02;
@@ -206,6 +207,13 @@ function animate() {
     if (distance > speed) {
       direction.normalize();
       sigla.position.add(direction.multiplyScalar(speed));
+
+      // face movement direction
+      const flatDir = direction.clone();
+      flatDir.y = 0;
+      if (flatDir.length() > 0.001) {
+        sigla.rotation.y = Math.atan2(flatDir.x, flatDir.z);
+      }
     } else {
       sigla.position.copy(siglaTarget);
       siglaMoving = false;
