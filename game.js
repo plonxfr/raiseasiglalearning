@@ -87,7 +87,7 @@ document.addEventListener('mousemove', e => {
   if (document.pointerLockElement === document.body) {
     yaw -= e.movementX * 0.002;
     pitch += e.movementY * 0.002; // inverted Y
-    pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+    // no clamp = can look fully up and down
   }
 });
 
@@ -121,8 +121,7 @@ function updateCamera() {
   camera.position.x = player.position.x + offsetX;
   camera.position.z = player.position.z + offsetZ;
 
-  // clamp height so camera doesn't go too high
-  camera.position.y = Math.min(player.position.y + 2, player.position.y + 1.8 + pitch);
+  camera.position.y = player.position.y + 1.5 + pitch; // can look fully up/down
 
   camera.lookAt(player.position.x, player.position.y + 0.6, player.position.z);
 }
