@@ -18,7 +18,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 // ---------------------------
 // Lighting
-// ---------------------------
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 10, 5);
@@ -69,6 +68,25 @@ loader.load('asset/image.png', texture => {
 });
 
 // ---------------------------
+// Sigla wandering
+let siglaTarget = sigla.position.clone();
+let siglaMoving = false;
+
+function pickRandomTarget() {
+  const mapSize = 5; // floor is 10x10, range -5 to 5
+  const x = Math.random() * mapSize * 2 - mapSize;
+  const z = Math.random() * mapSize * 2 - mapSize;
+  siglaTarget.set(x, 0.5, z);
+  siglaMoving = true;
+
+  const delay = 1000 + Math.random() * 2000; // 1–3 seconds
+  setTimeout(pickRandomTarget, delay);
+}
+
+// start wandering
+pickRandomTarget();
+
+// ---------------------------
 // Controls
 const keys = {};
 document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
@@ -87,7 +105,7 @@ document.addEventListener('mousemove', e => {
   if (document.pointerLockElement === document.body) {
     yaw -= e.movementX * 0.002;
     pitch += e.movementY * 0.002; // inverted Y
-    // no clamp = can look fully up and down
+    // no clamp = can look fully up/down
   }
 });
 
@@ -121,7 +139,7 @@ function updateCamera() {
   camera.position.x = player.position.x + offsetX;
   camera.position.z = player.position.z + offsetZ;
 
-  camera.position.y = player.position.y + 1.5 + pitch; // can look fully up/down
+  camera.position.y = player.position.y + 1.5 + pitch;
 
   camera.lookAt(player.position.x, player.position.y + 0.6, player.position.z);
 }
@@ -176,7 +194,23 @@ function animate() {
   rotatePlayer();
   updateCamera();
 
+  // Sigla rotation
   sigla.rotation.y += 0.01;
+
+  // Sigla wandering
+  if (siglaMoving) {
+    const speed = 0.02;
+    const direction = new THREE.Vector3().subVectors(siglaTarget, sigla.position);
+    const distance = direction.length();
+
+    if (distance > speed) {
+      direction.normalize();
+      sigla.position.add(direction.multiplyScalar(speed));
+    } else {
+      sigla.position.copy(siglaTarget);
+      siglaMoving = false;
+    }
+  }
 
   renderer.render(scene, camera);
 }
