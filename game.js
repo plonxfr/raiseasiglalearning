@@ -36,17 +36,15 @@ scene.add(floor);
 
 // ---------------------------
 // Player (visible rectangle)
-// ---------------------------
 const player = new THREE.Mesh(
     new THREE.BoxGeometry(0.6, 1.2, 0.4),
     new THREE.MeshBasicMaterial({ color: 0x0000ff })
 );
-player.position.y = 0.6;
+player.position.y = 0.6; // half height
 scene.add(player);
 
 // ---------------------------
 // Sigla pet
-// ---------------------------
 const sigla = new THREE.Mesh(
     new THREE.SphereGeometry(0.5, 32, 32),
     new THREE.MeshBasicMaterial({ color: 0x00ff00 })
@@ -73,7 +71,6 @@ loader.load('asset/image.png', (texture) => {
 
 // ---------------------------
 // Controls
-// ---------------------------
 const keys = {};
 document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
@@ -90,7 +87,7 @@ document.body.addEventListener('click', () => {
 document.addEventListener('mousemove', (e) => {
     if (document.pointerLockElement === document.body) {
         yaw -= e.movementX * 0.002;
-        pitch += e.movementY * 0.002; // inverted Y
+        pitch += e.movementY * 0.002;
         pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
     }
 });
@@ -117,9 +114,19 @@ function updateCamera() {
 
     camera.position.x = player.position.x + offsetX;
     camera.position.z = player.position.z + offsetZ;
-    camera.position.y = player.position.y + 1.5 + pitch;
+
+    // Clamp camera height so it doesn't go too high
+    camera.position.y = Math.min(player.position.y + 2, player.position.y + 1.8 + pitch);
 
     camera.lookAt(player.position.x, player.position.y + 0.6, player.position.z);
+}
+
+// ---------------------------
+// Rotate player to face movement
+function rotatePlayer() {
+    if (keys['w'] || keys['s'] || keys['a'] || keys['d']) {
+        player.rotation.y = yaw + Math.PI; // faces forward
+    }
 }
 
 // ---------------------------
@@ -173,10 +180,13 @@ window.addEventListener('resize', () => {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
+
     movePlayer();
+    rotatePlayer();
     updateCamera();
 
     sigla.rotation.y += 0.01;
+
     renderer.render(scene, camera);
 }
 
