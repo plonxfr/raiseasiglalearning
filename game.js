@@ -32,7 +32,7 @@ scene.add(sigla);
 const loader = new THREE.TextureLoader();
 
 loader.load(
-    'asset/siglaFace.png', // CHANGE if your folder is "assets"
+    'asset/image.png', // CHANGE if your folder is "assets"
     
     function (texture) {
         console.log("Texture loaded successfully!");
