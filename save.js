@@ -1,17 +1,16 @@
 function exportSave(data) {
-    return btoa(JSON.stringify(data)); // simple encoding
+    return btoa(JSON.stringify(data)); // simple base64 encoding
 }
 
 function importSave(encrypted) {
     return JSON.parse(atob(encrypted));
 }
 
-// Example: save/load coins
 function saveGame() {
-    const saveData = {coins: parseInt(document.getElementById('coins').textContent)};
+    const coins = parseInt(document.getElementById('coins').textContent);
+    const saveData = { coins };
     const exported = exportSave(saveData);
-    console.log("Exported save:", exported);
-    alert("Copy this string to save: " + exported);
+    alert("Copy this string to save your game:\n" + exported);
 }
 
 function loadGame() {
@@ -21,14 +20,8 @@ function loadGame() {
     document.getElementById('coins').textContent = imported.coins || 0;
 }
 
-// Optional buttons for saving/loading
-const uiDiv = document.getElementById('ui');
-const saveBtn = document.createElement('button');
-saveBtn.textContent = "Save Game";
-saveBtn.onclick = saveGame;
-uiDiv.appendChild(saveBtn);
-
-const loadBtn = document.createElement('button');
-loadBtn.textContent = "Load Game";
-loadBtn.onclick = loadGame;
-uiDiv.appendChild(loadBtn);
+// Attach buttons after page loads
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('saveBtn').addEventListener('click', saveGame);
+    document.getElementById('loadBtn').addEventListener('click', loadGame);
+});
