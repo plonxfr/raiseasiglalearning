@@ -51,11 +51,12 @@ sigla.position.set(0, 0.5, -2);
 scene.add(sigla);
 
 // Face layer
+let siglaFace; // reference for rotation
 const loader = new THREE.TextureLoader();
 loader.load('asset/image.png', texture => {
   texture.colorSpace = THREE.SRGBColorSpace;
 
-  const face = new THREE.Mesh(
+  siglaFace = new THREE.Mesh(
     new THREE.SphereGeometry(0.51, 32, 32),
     new THREE.MeshBasicMaterial({
       map: texture,
@@ -64,7 +65,10 @@ loader.load('asset/image.png', texture => {
     })
   );
 
-  sigla.add(face);
+  sigla.add(siglaFace);
+
+  // initial face orientation
+  siglaFace.rotation.y = Math.PI; // adjust if needed so face points forward
 });
 
 // ---------------------------
@@ -73,7 +77,7 @@ let siglaTarget = sigla.position.clone();
 let siglaMoving = false;
 
 function pickRandomTarget() {
-  const mapSize = 5; // floor is 10x10, range -5 to 5
+  const mapSize = 5; // floor is 10x10
   const x = Math.random() * mapSize * 2 - mapSize;
   const z = Math.random() * mapSize * 2 - mapSize;
   siglaTarget.set(x, 0.5, z);
@@ -83,7 +87,6 @@ function pickRandomTarget() {
   setTimeout(pickRandomTarget, delay);
 }
 
-// start wandering
 pickRandomTarget();
 
 // ---------------------------
@@ -104,9 +107,9 @@ document.body.addEventListener('click', () => {
 document.addEventListener('mousemove', e => {
   if (document.pointerLockElement === document.body) {
     yaw -= e.movementX * 0.002;
-    pitch += e.movementY * 0.002; // inverted Y
+    pitch += e.movementY * 0.002;
 
-    // clamp pitch so camera can't fly infinitely far
+    // clamp pitch so camera can't fly infinitely
     const maxPitch = Math.PI/2 - 0.01;
     const minPitch = -Math.PI/2 + 0.01;
     pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
@@ -208,11 +211,13 @@ function animate() {
       direction.normalize();
       sigla.position.add(direction.multiplyScalar(speed));
 
-      // face movement direction
-      const flatDir = direction.clone();
-      flatDir.y = 0;
-      if (flatDir.length() > 0.001) {
-        sigla.rotation.y = Math.atan2(flatDir.x, flatDir.z);
+      // rotate only face toward movement
+      if (siglaFace) {
+        const flatDir = direction.clone();
+        flatDir.y = 0;
+        if (flatDir.length() > 0.001) {
+          siglaFace.rotation.y = Math.atan2(flatDir.x, flatDir.z) + Math.PI;
+        }
       }
     } else {
       sigla.position.copy(siglaTarget);
