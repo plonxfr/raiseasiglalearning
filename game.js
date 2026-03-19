@@ -17,7 +17,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 // Sigla ball with face texture
 // ---------------------------
 const loader = new THREE.TextureLoader();
-const faceTexture = loader.load('asset/siglaFace.png'); // path must match your folder/image
+const faceTexture = loader.load('asset/image.png'); // path must match your folder/image
 
 const geometry = new THREE.SphereGeometry(0.5, 16, 16);
 const material = new THREE.MeshBasicMaterial({ map: faceTexture });
