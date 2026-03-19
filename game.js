@@ -17,36 +17,35 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 // ---------------------------
-// Lighting (so things aren't black)
+// Lighting
 // ---------------------------
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 10, 5);
 scene.add(light);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambient);
-
 // ---------------------------
-// Floor (house base)
+// Floor
 // ---------------------------
-const floorGeometry = new THREE.BoxGeometry(10, 0.1, 10);
-const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 0.1, 10),
+    new THREE.MeshBasicMaterial({ color: 0x888888 })
+);
 floor.position.y = -0.5;
 scene.add(floor);
 
 // ---------------------------
-// Player (invisible cube)
+// Player (invisible)
 // ---------------------------
 const player = new THREE.Mesh(
     new THREE.BoxGeometry(0.5, 1, 0.5),
     new THREE.MeshBasicMaterial({ visible: false })
 );
-player.position.y = 0;
 scene.add(player);
 
 // ---------------------------
-// Sigla ball (pet)
+// Sigla
 // ---------------------------
 const sigla = new THREE.Mesh(
     new THREE.SphereGeometry(0.5, 32, 32),
@@ -55,40 +54,82 @@ const sigla = new THREE.Mesh(
 sigla.position.set(0, 0, -2);
 scene.add(sigla);
 
-// Face layer
+// Face
 const loader = new THREE.TextureLoader();
 loader.load('asset/image.png', (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    const faceMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
-    });
-
-    const faceMesh = new THREE.Mesh(
+    const face = new THREE.Mesh(
         new THREE.SphereGeometry(0.51, 32, 32),
-        faceMaterial
+        new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide
+        })
     );
 
-    sigla.add(faceMesh);
+    sigla.add(face);
 });
 
 // ---------------------------
-// Movement controls
+// Controls
 // ---------------------------
 const keys = {};
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-document.addEventListener('keydown', (e) => {
-    keys[e.key.toLowerCase()] = true;
+// ---------------------------
+// Mouse look (Pointer Lock)
+// ---------------------------
+let yaw = 0;
+let pitch = 0;
+
+document.body.addEventListener('click', () => {
+    document.body.requestPointerLock();
 });
 
-document.addEventListener('keyup', (e) => {
-    keys[e.key.toLowerCase()] = false;
+document.addEventListener('mousemove', (e) => {
+    if (document.pointerLockElement === document.body) {
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+    }
 });
 
 // ---------------------------
-// Coins system
+// Movement
+// ---------------------------
+function movePlayer() {
+    const speed = 0.05;
+
+    const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const right = new THREE.Vector3(forward.z, 0, -forward.x);
+
+    if (keys['w']) player.position.add(forward.clone().multiplyScalar(-speed));
+    if (keys['s']) player.position.add(forward.clone().multiplyScalar(speed));
+    if (keys['a']) player.position.add(right.clone().multiplyScalar(-speed));
+    if (keys['d']) player.position.add(right.clone().multiplyScalar(speed));
+}
+
+// ---------------------------
+// Third person camera
+// ---------------------------
+function updateCamera() {
+    const distance = 3;
+
+    const offsetX = Math.sin(yaw) * distance;
+    const offsetZ = Math.cos(yaw) * distance;
+
+    camera.position.x = player.position.x + offsetX;
+    camera.position.z = player.position.z + offsetZ;
+    camera.position.y = player.position.y + 2 + pitch * 2;
+
+    camera.lookAt(player.position.x, player.position.y + 1, player.position.z);
+}
+
+// ---------------------------
+// Coins
 // ---------------------------
 let coins = 0;
 const coinsDisplay = document.getElementById('coins');
@@ -97,29 +138,6 @@ document.getElementById('feedButton').onclick = () => {
     coins++;
     coinsDisplay.textContent = coins;
 };
-
-// ---------------------------
-// Camera follow
-// ---------------------------
-function updateCamera() {
-    camera.position.x = player.position.x;
-    camera.position.z = player.position.z + 5;
-    camera.position.y = player.position.y + 3;
-
-    camera.lookAt(player.position);
-}
-
-// ---------------------------
-// Movement logic
-// ---------------------------
-function movePlayer() {
-    const speed = 0.05;
-
-    if (keys['w']) player.position.z -= speed;
-    if (keys['s']) player.position.z += speed;
-    if (keys['a']) player.position.x -= speed;
-    if (keys['d']) player.position.x += speed;
-}
 
 // ---------------------------
 // Resize
@@ -131,7 +149,7 @@ window.addEventListener('resize', () => {
 });
 
 // ---------------------------
-// Animation loop
+// Loop
 // ---------------------------
 function animate() {
     requestAnimationFrame(animate);
