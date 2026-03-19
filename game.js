@@ -2,6 +2,7 @@
 // Scene setup
 // ---------------------------
 const scene = new THREE.Scene();
+
 const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -17,35 +18,40 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 camera.position.z = 5;
 
 // ---------------------------
-// Create Sigla ball (ALWAYS visible)
+// Base Sigla ball (ALWAYS visible)
 // ---------------------------
-const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-
-// Start with a fallback green material
-let material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const sigla = new THREE.Mesh(geometry, material);
+const baseGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const sigla = new THREE.Mesh(baseGeometry, baseMaterial);
 scene.add(sigla);
 
 // ---------------------------
-// Load face texture (optional overlay)
+// Face texture (layered on top)
 // ---------------------------
 const loader = new THREE.TextureLoader();
 
 loader.load(
-    'asset/image.png', // CHANGE if your folder is "assets"
-    
+    'asset/image.png', // your file
+
     function (texture) {
-        console.log("Texture loaded successfully!");
-       sigla.material = new THREE.MeshBasicMaterial({ 
-    map: texture,
-    transparent: true
-});
+        console.log("Face loaded!");
+
+        const faceMaterial = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true
+        });
+
+        // Slightly bigger so it sits on top of the ball
+        const faceGeometry = new THREE.SphereGeometry(0.51, 32, 32);
+        const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+
+        sigla.add(faceMesh); // attach to ball
     },
 
     undefined,
 
-    function (error) {
-        console.error("Texture failed to load:", error);
+    function (err) {
+        console.error("Face failed to load:", err);
     }
 );
 
@@ -80,6 +86,7 @@ function saveGame() {
 function loadGame() {
     const input = prompt("Paste your save:");
     if (!input) return;
+
     const data = importSave(input);
     coins = data.coins || 0;
     coinsDisplay.textContent = coins;
@@ -100,11 +107,14 @@ window.addEventListener('resize', () => {
 });
 
 // ---------------------------
-// Animation loop
+// Animation
 // ---------------------------
 function animate() {
     requestAnimationFrame(animate);
+
     sigla.rotation.y += 0.01;
+
     renderer.render(scene, camera);
 }
+
 animate();
