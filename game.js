@@ -1,5 +1,5 @@
 // ---------------------------
-// Three.js scene setup
+// Scene setup
 // ---------------------------
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -8,69 +8,87 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 );
+
 const renderer = new THREE.WebGLRenderer({
     canvas: document.getElementById('gameCanvas')
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-// ---------------------------
-// Sigla ball with face texture
-// ---------------------------
-const loader = new THREE.TextureLoader();
-const faceTexture = loader.load('asset/image.png'); // path must match your folder/image
-
-const geometry = new THREE.SphereGeometry(0.5, 16, 16);
-const material = new THREE.MeshBasicMaterial({ map: faceTexture });
-const sigla = new THREE.Mesh(geometry, material);
-scene.add(sigla);
-
 camera.position.z = 5;
 
 // ---------------------------
-// Coins & UI
+// Create Sigla ball (ALWAYS visible)
+// ---------------------------
+const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+
+// Start with a fallback green material
+let material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const sigla = new THREE.Mesh(geometry, material);
+scene.add(sigla);
+
+// ---------------------------
+// Load face texture (optional overlay)
+// ---------------------------
+const loader = new THREE.TextureLoader();
+
+loader.load(
+    'asset/siglaFace.png', // CHANGE if your folder is "assets"
+    
+    function (texture) {
+        console.log("Texture loaded successfully!");
+        sigla.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+
+    undefined,
+
+    function (error) {
+        console.error("Texture failed to load:", error);
+    }
+);
+
+// ---------------------------
+// Coins system
 // ---------------------------
 let coins = 0;
 const coinsDisplay = document.getElementById('coins');
 
-const feedButton = document.getElementById('feedButton');
-feedButton.addEventListener('click', () => {
+document.getElementById('feedButton').addEventListener('click', () => {
     coins += 1;
     coinsDisplay.textContent = coins;
 });
 
 // ---------------------------
-// Save / Load functions
+// Save / Load system
 // ---------------------------
 function exportSave(data) {
     return btoa(JSON.stringify(data));
 }
 
-function importSave(encrypted) {
-    return JSON.parse(atob(encrypted));
+function importSave(str) {
+    return JSON.parse(atob(str));
 }
 
 function saveGame() {
-    const saveData = { coins: parseInt(coinsDisplay.textContent) };
+    const saveData = { coins };
     const exported = exportSave(saveData);
-    alert("Copy this string to save your game:\n" + exported);
+    alert("Copy this save:\n" + exported);
 }
 
 function loadGame() {
-    const importedStr = prompt("Paste your save string:");
-    if (!importedStr) return;
-    const imported = importSave(importedStr);
-    coins = imported.coins || 0;
+    const input = prompt("Paste your save:");
+    if (!input) return;
+    const data = importSave(input);
+    coins = data.coins || 0;
     coinsDisplay.textContent = coins;
 }
 
-// Attach save/load buttons
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('saveBtn').addEventListener('click', saveGame);
-    document.getElementById('loadBtn').addEventListener('click', loadGame);
+    document.getElementById('saveBtn').onclick = saveGame;
+    document.getElementById('loadBtn').onclick = loadGame;
 });
 
 // ---------------------------
-// Window resize
+// Resize handling
 // ---------------------------
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -79,7 +97,7 @@ window.addEventListener('resize', () => {
 });
 
 // ---------------------------
-// Animate Sigla
+// Animation loop
 // ---------------------------
 function animate() {
     requestAnimationFrame(animate);
