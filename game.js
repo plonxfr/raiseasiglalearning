@@ -39,8 +39,12 @@ scene.add(floor);
 // Player (invisible)
 // ---------------------------
 const player = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 1, 0.5),
-    new THREE.MeshBasicMaterial({ visible: false })
+    new THREE.BoxGeometry(0.6, 1.2, 0.4), // rectangle shape
+    new THREE.MeshBasicMaterial({ color: 0x0000ff }) // blue player
+);
+
+player.position.y = 0.5; // lift it so it sits on the floor
+scene.add(player);
 );
 scene.add(player);
 
