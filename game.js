@@ -1,231 +1,174 @@
 // ---------------------------
-// Scene setup
+// GLOBAL
 // ---------------------------
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa0d8f0);
+let selectedColor = 0x00ff00; // default
 
-const camera = new THREE.PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
-
-const renderer = new THREE.WebGLRenderer({
-  canvas: document.getElementById('gameCanvas')
+// ---------------------------
+// MENU PREVIEW SCENE
+// ---------------------------
+const previewScene = new THREE.Scene();
+const previewCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+const previewRenderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('previewCanvas'),
+  alpha: true
 });
-renderer.setSize(window.innerWidth, window.innerHeight);
+previewRenderer.setSize(200, 200);
 
-// ---------------------------
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 10, 5);
-scene.add(light);
+previewCamera.position.z = 2;
 
-// ---------------------------
-// Floor
-const floor = new THREE.Mesh(
-  new THREE.BoxGeometry(10, 0.1, 10),
-  new THREE.MeshBasicMaterial({ color: 0x888888 })
-);
-floor.position.y = 0;
-scene.add(floor);
-
-// ---------------------------
-// Player rectangle
-const player = new THREE.Mesh(
-  new THREE.BoxGeometry(0.6, 1.2, 0.4),
-  new THREE.MeshBasicMaterial({ color: 0x0000ff })
-);
-player.position.y = 0.6;
-scene.add(player);
-
-// ---------------------------
-// Sigla pet
-const sigla = new THREE.Mesh(
+const previewSigla = new THREE.Mesh(
   new THREE.SphereGeometry(0.5, 32, 32),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+  new THREE.MeshBasicMaterial({ color: selectedColor })
 );
-sigla.position.set(0, 0.5, -2);
-scene.add(sigla);
+previewScene.add(previewSigla);
 
-// Face layer
-let siglaFace; // reference for rotation
-const loader = new THREE.TextureLoader();
-loader.load('asset/image.png', texture => {
-  texture.colorSpace = THREE.SRGBColorSpace;
+// spin preview
+function animatePreview() {
+  requestAnimationFrame(animatePreview);
+  previewSigla.rotation.y += 0.02;
+  previewRenderer.render(previewScene, previewCamera);
+}
+animatePreview();
 
-  siglaFace = new THREE.Mesh(
-    new THREE.SphereGeometry(0.51, 32, 32),
-    new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      side: THREE.DoubleSide
-    })
-  );
-
-  sigla.add(siglaFace);
-
-  // initial face orientation
-  siglaFace.rotation.y = Math.PI; // adjust if needed so face points forward
+// ---------------------------
+// COLOR PICKER
+// ---------------------------
+document.querySelectorAll('#colors button').forEach(btn => {
+  btn.onclick = () => {
+    selectedColor = Number(btn.dataset.color);
+    previewSigla.material.color.set(selectedColor);
+  };
 });
 
 // ---------------------------
-// Sigla wandering
-let siglaTarget = sigla.position.clone();
-let siglaMoving = false;
-
-function pickRandomTarget() {
-  const mapSize = 5; // floor is 10x10
-  const x = Math.random() * mapSize * 2 - mapSize;
-  const z = Math.random() * mapSize * 2 - mapSize;
-  siglaTarget.set(x, 0.5, z);
-  siglaMoving = true;
-
-  const delay = 1000 + Math.random() * 2000; // 1–3 seconds
-  setTimeout(pickRandomTarget, delay);
-}
-
-pickRandomTarget();
-
+// PLAY BUTTON
 // ---------------------------
-// Controls
-const keys = {};
-document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-// ---------------------------
-// Mouse look (pointer lock)
-let yaw = 0;
-let pitch = 0;
-
-document.body.addEventListener('click', () => {
-  document.body.requestPointerLock();
-});
-
-document.addEventListener('mousemove', e => {
-  if (document.pointerLockElement === document.body) {
-    yaw -= e.movementX * 0.002;
-    pitch += e.movementY * 0.002;
-
-    // clamp pitch so camera can't fly infinitely
-    const maxPitch = Math.PI/2 - 0.01;
-    const minPitch = -Math.PI/2 + 0.01;
-    pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
-  }
-});
-
-// ---------------------------
-// Movement
-function movePlayer() {
-  const speed = 0.05;
-  const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-  const right = new THREE.Vector3(forward.z, 0, -forward.x);
-
-  if (keys['w']) player.position.add(forward.clone().multiplyScalar(-speed));
-  if (keys['s']) player.position.add(forward.clone().multiplyScalar(speed));
-  if (keys['a']) player.position.add(right.clone().multiplyScalar(-speed));
-  if (keys['d']) player.position.add(right.clone().multiplyScalar(speed));
-}
-
-// Rotate player to face movement
-function rotatePlayer() {
-  if (keys['w'] || keys['s'] || keys['a'] || keys['d']) {
-    player.rotation.y = yaw + Math.PI;
-  }
-}
-
-// ---------------------------
-// Third-person camera
-function updateCamera() {
-  const distance = 3;
-  const offsetX = Math.sin(yaw) * distance;
-  const offsetZ = Math.cos(yaw) * distance;
-
-  camera.position.x = player.position.x + offsetX;
-  camera.position.z = player.position.z + offsetZ;
-
-  camera.position.y = player.position.y + 1.5 + pitch;
-
-  camera.lookAt(player.position.x, player.position.y + 0.6, player.position.z);
-}
-
-// ---------------------------
-// Coins + feed
-let coins = 0;
-const coinsDisplay = document.getElementById('coins');
-
-document.getElementById('feedButton').onclick = () => {
-  coins++;
-  coinsDisplay.textContent = coins;
+document.getElementById('playBtn').onclick = () => {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('gameCanvas').style.display = 'block';
+  startGame();
 };
 
 // ---------------------------
-// Save / load
-function exportSave(data) { return btoa(JSON.stringify(data)); }
-function importSave(str) { return JSON.parse(atob(str)); }
-
-function saveGame() {
-  const saveData = { coins };
-  alert("Copy your save:\n" + exportSave(saveData));
-}
-
-function loadGame() {
-  const input = prompt("Paste your save:");
-  if (!input) return;
-  const data = importSave(input);
-  coins = data.coins || 0;
-  coinsDisplay.textContent = coins;
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('saveBtn').onclick = saveGame;
-  document.getElementById('loadBtn').onclick = loadGame;
-});
-
+// MAIN GAME
 // ---------------------------
-// Resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+function startGame() {
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xa0d8f0);
+
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas: document.getElementById('gameCanvas')
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
 
-// ---------------------------
-// Animate
-function animate() {
-  requestAnimationFrame(animate);
+  // lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(5, 10, 5);
+  scene.add(light);
 
-  movePlayer();
-  rotatePlayer();
-  updateCamera();
+  // floor
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(10, 0.1, 10),
+    new THREE.MeshBasicMaterial({ color: 0x888888 })
+  );
+  scene.add(floor);
 
-  // Sigla wandering
-  if (siglaMoving) {
-    const speed = 0.02;
-    const direction = new THREE.Vector3().subVectors(siglaTarget, sigla.position);
-    const distance = direction.length();
+  // player
+  const player = new THREE.Mesh(
+    new THREE.BoxGeometry(0.6, 1.2, 0.4),
+    new THREE.MeshBasicMaterial({ color: 0x0000ff })
+  );
+  player.position.y = 0.6;
+  scene.add(player);
 
-    if (distance > speed) {
-      direction.normalize();
-      sigla.position.add(direction.multiplyScalar(speed));
+  // Sigla with selected color
+  const sigla = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 32, 32),
+    new THREE.MeshBasicMaterial({ color: selectedColor })
+  );
+  sigla.position.set(0, 0.5, -2);
+  scene.add(sigla);
 
-      // rotate only face toward movement
-      if (siglaFace) {
-        const flatDir = direction.clone();
-        flatDir.y = 0;
-        if (flatDir.length() > 0.001) {
-          siglaFace.rotation.y = Math.atan2(flatDir.x, flatDir.z) + Math.PI;
-        }
-      }
-    } else {
-      sigla.position.copy(siglaTarget);
-      siglaMoving = false;
+  // wandering
+  let target = sigla.position.clone();
+  let moving = false;
+
+  function pickTarget() {
+    const x = Math.random() * 10 - 5;
+    const z = Math.random() * 10 - 5;
+    target.set(x, 0.5, z);
+    moving = true;
+
+    setTimeout(pickTarget, 1000 + Math.random() * 2000);
+  }
+  pickTarget();
+
+  // controls
+  const keys = {};
+  document.addEventListener('keydown', e => keys[e.key] = true);
+  document.addEventListener('keyup', e => keys[e.key] = false);
+
+  let yaw = 0;
+  let pitch = 0;
+
+  document.body.onclick = () => document.body.requestPointerLock();
+
+  document.addEventListener('mousemove', e => {
+    if (document.pointerLockElement === document.body) {
+      yaw -= e.movementX * 0.002;
+      pitch += e.movementY * 0.002;
+
+      pitch = Math.max(-Math.PI/2+0.01, Math.min(Math.PI/2-0.01, pitch));
     }
+  });
+
+  function movePlayer() {
+    const speed = 0.05;
+    const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const right = new THREE.Vector3(forward.z, 0, -forward.x);
+
+    if (keys['w']) player.position.add(forward.clone().multiplyScalar(-speed));
+    if (keys['s']) player.position.add(forward.clone().multiplyScalar(speed));
+    if (keys['a']) player.position.add(right.clone().multiplyScalar(-speed));
+    if (keys['d']) player.position.add(right.clone().multiplyScalar(speed));
   }
 
-  renderer.render(scene, camera);
-}
+  function updateCamera() {
+    camera.position.x = player.position.x + Math.sin(yaw) * 3;
+    camera.position.z = player.position.z + Math.cos(yaw) * 3;
+    camera.position.y = player.position.y + 1.5 + pitch;
 
-animate();
+    camera.lookAt(player.position);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    movePlayer();
+    updateCamera();
+
+    // Sigla movement
+    if (moving) {
+      const dir = new THREE.Vector3().subVectors(target, sigla.position);
+      if (dir.length() > 0.02) {
+        dir.normalize();
+        sigla.position.add(dir.multiplyScalar(0.02));
+      } else {
+        moving = false;
+      }
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+}
