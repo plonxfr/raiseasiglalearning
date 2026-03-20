@@ -1,19 +1,13 @@
-// ---------------------------
-// GLOBAL
-// ---------------------------
-let selectedColor = 0x00ff00; // default
+// ================= MENU =================
+let selectedColor = 0x00ff00;
 
-// ---------------------------
-// MENU PREVIEW SCENE
-// ---------------------------
-const previewScene = new THREE.Scene();
-const previewCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-const previewRenderer = new THREE.WebGLRenderer({
-  canvas: document.getElementById('previewCanvas'),
-  alpha: true
-});
+// preview setup
+const previewCanvas = document.getElementById('previewCanvas');
+const previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas });
 previewRenderer.setSize(200, 200);
 
+const previewScene = new THREE.Scene();
+const previewCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
 previewCamera.position.z = 2;
 
 const previewSigla = new THREE.Mesh(
@@ -22,38 +16,38 @@ const previewSigla = new THREE.Mesh(
 );
 previewScene.add(previewSigla);
 
-// spin preview
-function animatePreview() {
-  requestAnimationFrame(animatePreview);
+// preview loop
+function previewLoop() {
+  requestAnimationFrame(previewLoop);
   previewSigla.rotation.y += 0.02;
   previewRenderer.render(previewScene, previewCamera);
 }
-animatePreview();
+previewLoop();
 
-// ---------------------------
-// COLOR PICKER
-// ---------------------------
-document.querySelectorAll('#colors button').forEach(btn => {
+// color buttons
+document.querySelectorAll('.colorBtn').forEach(btn => {
   btn.onclick = () => {
     selectedColor = Number(btn.dataset.color);
     previewSigla.material.color.set(selectedColor);
   };
 });
 
-// ---------------------------
-// PLAY BUTTON
-// ---------------------------
+// ================= GAME =================
+let gameStarted = false;
+
 document.getElementById('playBtn').onclick = () => {
+  if (gameStarted) return;
+  gameStarted = true;
+
   document.getElementById('menu').style.display = 'none';
   document.getElementById('gameCanvas').style.display = 'block';
+
   startGame();
 };
 
-// ---------------------------
-// MAIN GAME
-// ---------------------------
 function startGame() {
 
+  // scene
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xa0d8f0);
 
@@ -90,7 +84,7 @@ function startGame() {
   player.position.y = 0.6;
   scene.add(player);
 
-  // Sigla with selected color
+  // sigla
   const sigla = new THREE.Mesh(
     new THREE.SphereGeometry(0.5, 32, 32),
     new THREE.MeshBasicMaterial({ color: selectedColor })
@@ -114,20 +108,22 @@ function startGame() {
 
   // controls
   const keys = {};
-  document.addEventListener('keydown', e => keys[e.key] = true);
-  document.addEventListener('keyup', e => keys[e.key] = false);
+  document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+  document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
   let yaw = 0;
   let pitch = 0;
 
-  document.body.onclick = () => document.body.requestPointerLock();
+  document.addEventListener('click', () => {
+    if (gameStarted) document.body.requestPointerLock();
+  });
 
   document.addEventListener('mousemove', e => {
     if (document.pointerLockElement === document.body) {
       yaw -= e.movementX * 0.002;
       pitch += e.movementY * 0.002;
 
-      pitch = Math.max(-Math.PI/2+0.01, Math.min(Math.PI/2-0.01, pitch));
+      pitch = Math.max(-Math.PI/2 + 0.01, Math.min(Math.PI/2 - 0.01, pitch));
     }
   });
 
@@ -156,7 +152,6 @@ function startGame() {
     movePlayer();
     updateCamera();
 
-    // Sigla movement
     if (moving) {
       const dir = new THREE.Vector3().subVectors(target, sigla.position);
       if (dir.length() > 0.02) {
